@@ -4,8 +4,19 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+
+
+require('dotenv').config ({ path : './sengrid.env'});                   
+
+
+
+
+
+var indexApi = require('./routes/index');
+var usersApi = require('./routes/api/users/usersRoutes');
+var messagesApi = require('./routes/api/messages/messagesRoutes');
+var subscribesApi = require('./routes/api/subscribes/subscribesRoutes');
+var banksApi = require('./routes/api/banks/banksRoutes');
 
 var app = express();
 
@@ -19,16 +30,19 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/', indexApi);
+app.use('/api/users', usersApi);
+app.use('/api/messages', messagesApi);
+app.use('/api/subscribes', subscribesApi);
+app.use('/api/banks', banksApi);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
