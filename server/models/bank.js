@@ -29,7 +29,6 @@ module.exports = (sequelize, DataTypes) => {
     bank_thumbnail: DataTypes.STRING,
     active: {
       type: DataTypes.INTEGER,
-      defaultValue: 0
     }
   }, {
     sequelize,

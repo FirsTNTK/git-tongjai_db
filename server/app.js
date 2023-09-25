@@ -6,7 +6,7 @@ var logger = require('morgan');
 
 
 
-require('dotenv').config ({ path : './sengrid.env'});                   
+require('dotenv').config({ path: './sengrid.env' });
 
 
 

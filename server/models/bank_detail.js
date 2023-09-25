@@ -34,8 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     bank_branch: DataTypes.STRING,
     account_name: DataTypes.STRING,
     active: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
+      type: DataTypes.INTEGER
     },
   }, {
     sequelize,
