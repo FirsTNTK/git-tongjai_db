@@ -12,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       BankDetail.belongsTo(models.Bank, {
+        through:'Bank',
+        as:'bank',
         foreignKey: 'bank_id',
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
@@ -22,20 +24,12 @@ module.exports = (sequelize, DataTypes) => {
     bank_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      references: {
-        model: 'Bank', // ระบุตารางที่ต้องการเชื่อมโยง
-        key: 'bank_id' // ระบุฟิลด์ที่เป็นคีย์นอก
-      },
-      onDelete: 'CASCADE', // ระบุการลบ CASCADE
-      onUpdate: 'CASCADE' // ระบุการอัปเดต CASCADE
     },
     language: DataTypes.STRING,
     bank_name: DataTypes.STRING,
     bank_branch: DataTypes.STRING,
     account_name: DataTypes.STRING,
-    active: {
-      type: DataTypes.INTEGER
-    },
+    
   }, {
     sequelize,
     modelName: 'BankDetail',
