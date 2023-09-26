@@ -24,9 +24,6 @@ module.exports = {
       account_name: {
         type: Sequelize.STRING
       },
-      active: {
-        type: Sequelize.INTEGER
-      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

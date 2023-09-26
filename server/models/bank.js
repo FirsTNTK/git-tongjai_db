@@ -24,9 +24,16 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    account_no: DataTypes.INTEGER,
-    account_code: DataTypes.INTEGER,
-    bank_thumbnail: DataTypes.STRING,
+    account_no: {
+      type: DataTypes.STRING,
+      
+    },
+    account_code: {
+      type: DataTypes.STRING,
+    },
+    bank_thumbnail: {
+      type: DataTypes.STRING,
+    },
     active: {
       type: DataTypes.INTEGER,
       defaultValue: 0

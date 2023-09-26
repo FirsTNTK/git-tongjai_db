@@ -13,16 +13,16 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       account_no: {
-        type: Sequelize.INTEGER
+        type: Sequelize.STRING
       },
       account_code: {
-        type: Sequelize.INTEGER
+        type: Sequelize.STRING
       },
       bank_thumbnail: {
         type: Sequelize.STRING
       },
       active: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER
       },
       createdAt: {
         allowNull: false,

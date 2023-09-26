@@ -12,8 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       BankDetail.belongsTo(models.Bank, {
-        through:'Bank',
-        as:'bank',
         foreignKey: 'bank_id',
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
@@ -24,12 +22,26 @@ module.exports = (sequelize, DataTypes) => {
     bank_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
+      autoIncrement: true
     },
-    language: DataTypes.STRING,
-    bank_name: DataTypes.STRING,
-    bank_branch: DataTypes.STRING,
-    account_name: DataTypes.STRING,
-    
+    language: {
+      type: DataTypes.STRING,
+      primaryKey: true,
+      defaultValue: ''
+    },
+    bank_name: {
+      type: DataTypes.STRING,
+      defaultValue: ''
+    },
+    bank_branch: {
+      type: DataTypes.STRING,
+      defaultValue: ''
+    },
+    account_name: {
+      type: DataTypes.STRING,
+      defaultValue: ''
+    },
+
   }, {
     sequelize,
     modelName: 'BankDetail',

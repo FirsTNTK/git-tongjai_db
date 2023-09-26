@@ -18,7 +18,7 @@ router.get('/', async (req, res, next) => {
     let offset = (page - 1) * limit;
 
     try {
-        
+
         const banks = await Bank.findAll({
             where: filter,
             offset,
@@ -26,8 +26,7 @@ router.get('/', async (req, res, next) => {
             order: [[sort, order]],
             include: [BankDetail]
         });
-            console.log(banks)
-            
+
         // ค้นหาข้อมูลจากตาราง BankDetail
         // const bankDetails = await BankDetail.findAll({
         //     where: filter,
@@ -64,7 +63,7 @@ router.get('/', async (req, res, next) => {
 // // Fetch by id  
 router.get('/:id', async (req, res, next) => {
     const { id } = req.params;
-    
+
     try {
         // ค้นหาข้อมูลจากตาราง Bank โดยใช้ id ที่กำหนด
         const bank = await Bank.findByPk(id, {
@@ -89,52 +88,55 @@ router.get('/:id', async (req, res, next) => {
 
 // Create 
 router.post('/', [
-    body('account_no').notEmpty().isInt().trim().escape(),
-    body('account_code').notEmpty().isInt().trim().escape(),
+    body('account_no').notEmpty().trim().escape(),
+    body('account_code').notEmpty().trim().escape(),
     body('bank_thumbnail').trim().escape(),
-    body('language').notEmpty().trim().escape(),
-    body('bank_name').notEmpty().trim().escape(),
-    body('bank_branch').notEmpty().trim(),
-    body('account_name').notEmpty().trim().escape(),
+    // body('language').notEmpty().trim().escape(),
+    // body('bank_name').notEmpty().trim().escape(),
+    // body('bank_branch').notEmpty().trim(),
+    // body('account_name').notEmpty().trim().escape(),
     body('active').notEmpty().isInt().trim().escape(),
 ], async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         res.status(400).send({ errors: errors.array() });
     } else {
-        const { bank_id,account_no, account_code, bank_thumbnail, language, bank_name, bank_branch, account_name, active } = req.body;
-
+        const { account_no, account_code, bank_thumbnail, active, BankDetails } = req.body;
         try {
             // เริ่ม Transaction Sequelize
             await sequelize.transaction(async (t) => {
                 // สร้างข้อมูลในตาราง Bank
-
                 const bank = await Bank.create({
-                    bank_id,
                     account_no,
                     account_code,
                     bank_thumbnail,
                     active
-                
 
                 }, { transaction: t });
-                console.log("Haha"  + bank.bank_id)
                 // สร้างข้อมูลในตาราง BankDetail โดยใช้ bank_id จากข้อมูลที่สร้างในตาราง Bank
-                // await BankDetail.create({
-                //     bank_id: bank.bank_id,
-                //     language,
-                //     bank_name,
-                //     bank_branch,
-                //     account_name,
-                // }, { transaction: t });
+                for (const detail of BankDetails) {
+                    await BankDetail.create({
+                        bank_id: bank.bank_id,
+                        language: detail.language,
+                        bank_name: detail.bank_name,
+                        bank_branch: detail.bank_branch,
+                        account_name: detail.account_name,
+                    }, { transaction: t });
+                }
             });
-
-
             res.send({ success: { message: "Insert successfully.", result: req.body } });
         } catch (err) {
-            // console.error(err);
-            const { original: { code, sqlMessage } } = err;
-            res.status(400).send({ error: { name: code, message: sqlMessage } });
+            // ในกรณีที่มีข้อผิดพลาดเกิดขึ้นในการทำธุรกรรม
+            console.error(err); // แสดงข้อผิดพลาดใน console เพื่อการตรวจสอบ
+
+            // เพิ่มข้อมูลเพิ่มเติมในการตอบกลับเกี่ยวกับข้อผิดพลาด SQL
+            res.status(400).send({
+                error: {
+                    name: "TransactionError",
+                    message: "An error occurred during transaction",
+                    sqlError: err.message, // เพิ่มข้อมูล SQL ข้อผิดพลาด
+                }
+            });
         }
     }
 });
@@ -299,16 +301,17 @@ router.put('/:id', [
 router.delete('/:id', async (req, res, next) => {
     try {
         const bankId = req.params.id;
-
         // ค้นหาข้อมูลจากตาราง Bank และ BankDetail พร้อมกัน
         const [bank, bankDetail] = await Promise.all([
             Bank.findByPk(bankId),
-            BankDetail.findOne({ where: { bank_id: bankId } }),
+            BankDetail.findAll({ where: { bank_id: bankId } }), // ใช้ findAll เพื่อค้นหาทั้งหมด
         ]);
-
-        if (!bank || !bankDetail) {
+        if (!bank || !bankDetail || bankDetail.length === 0) {
             return res.status(400).send({ error: { name: "DataNotFound", message: "Bank or BankDetail data not found" } });
         }
+        // ลบข้อมูล
+        await bank.destroy();
+        await BankDetail.destroy({ where: { bank_id: bankId } }); // ลบข้อมูล BankDetail ที่เกี่ยวข้องกับ bank_id
 
         // สร้างอ็อบเจ็กต์ใหม่ที่รวมข้อมูลทั้งสองตาราง
         const responseData = {
@@ -322,14 +325,7 @@ router.delete('/:id', async (req, res, next) => {
                         bank_thumbnail: bank.bank_thumbnail,
                         active: bank.active,
                     },
-                    bankDetail: {
-                        bank_id: bankDetail.bank_id,
-                        language: bankDetail.language,
-                        bank_name: bankDetail.bank_name,
-                        bank_branch: bankDetail.bank_branch,
-                        account_name: bankDetail.account_name,
-                        active: bankDetail.active,
-                    },
+                    include: bankDetail // แสดงข้อมูลทั้งหมดของ BankDetail
                 },
             },
         };
@@ -337,9 +333,6 @@ router.delete('/:id', async (req, res, next) => {
         // แสดงข้อมูลทั้งสองตารางรวมกันในการตอบกลับ
         res.send(responseData);
 
-        // ลบข้อมูล
-        await bank.destroy();
-        await bankDetail.destroy();
     } catch (err) {
         console.error(err);
         const { original: { code, sqlMessage } } = err;
@@ -382,26 +375,27 @@ router.get('/report/excel', async (req, res, next) => {
 
         // รวมข้อมูลจากตาราง Bank และ BankDetail
         const combinedData = banks.map(bank => {
-            const relatedBankDetail = bankDetailsMap.get(bank.bank_id);
-            return {
-                bank_id: bank.bank_id,
-                account_name: relatedBankDetail ? relatedBankDetail.account_name : null,
-                bank_name: relatedBankDetail ? relatedBankDetail.bank_name : null,
-                bank_branch: relatedBankDetail ? relatedBankDetail.bank_branch : null,
-                account_no: bank.account_no,
-                account_code: bank.account_code,
-                bank_thumbnail: bank.bank_thumbnail,
-                language: relatedBankDetail ? relatedBankDetail.language : null,
-                active: relatedBankDetail ? relatedBankDetail.active : null,
-            };
-        });
-
+            const relatedBankDetails = bankDetails.filter(detail => detail.bank_id === bank.bank_id);
+            const rowDataArray = relatedBankDetails.map(relatedBankDetail => {
+                return {
+                    bank_id: bank.bank_id,
+                    account_name: relatedBankDetail.account_name,
+                    bank_name: relatedBankDetail.bank_name,
+                    bank_branch: relatedBankDetail.bank_branch,
+                    account_no: bank.account_no,
+                    account_code: bank.account_code,
+                    bank_thumbnail: bank.bank_thumbnail,
+                    language: relatedBankDetail.language,
+                    active: bank.active,
+                };
+            });
+            return rowDataArray;
+        }).flat();
+       
 
         // EXCEL
         const workbook = new excel.Workbook();
         const worksheet = workbook.addWorksheet('BANK');
-
-
 
         // EXCEL : HEADER
         let columns = [
@@ -415,6 +409,7 @@ router.get('/report/excel', async (req, res, next) => {
             { header: 'language', key: 'language' },
             { header: 'active', key: 'active' },
         ];
+
 
         // COLUMNS
         worksheet.columns = columns;
@@ -455,15 +450,12 @@ router.get('/report/excel', async (req, res, next) => {
         res.setHeader('Content-Disposition', 'attachment; filename=bank.xlsx');
         res.end(buffer, 'binary');
 
-
     } catch (err) {
         console.log(err);
         const { original: { code, sqlMessage } } = err;
         res.status(400).send({ error: { name: code, message: sqlMessage } });
     }
 });
-
-
 
 
 
